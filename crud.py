@@ -1,9 +1,9 @@
 import pyodbc;
 
 # Declarar variables de Conexión
-name_server = 'PCMARTIN'+'\\'+'SQLEXPRESS'  # Nombre del servidor SQL
+name_server = 'UPOAULA10423'  # Nombre del servidor SQL
 database = 'SGCBP'  # Nombre de la base de datos
-username = 'Administrador2'  # Usuario para la conexión
+username = 'Administrador'  # Usuario para la conexión
 password = 'sgc2024a'  # Contraseña del usuario
 controlador_odbc = 'ODBC Driver 17 for SQL Server'  # Controlador ODBC para SQL Server.
 
@@ -13,24 +13,23 @@ connection_string = f'DRIVER={controlador_odbc};SERVER={name_server};DATABASE={d
 
 
 # Función para insertar un registro en la tabla Clientes
+# Función para insertar un registro en la tabla Clientes
 def insertar_cliente(conexion):
     try:
         cursor = conexion.cursor()
         print("\n\tInserción de un nuevo cliente:")
-        nombre = input("Ingrese el nombre del cliente: ")
-        apellido = input("Ingrese el apellido del cliente: ")
+        nombre_cliente = input("Ingrese el nombre del cliente: ")
+        cedula_ruc = input("Ingrese el número de cédula o RUC: ")
         direccion = input("Ingrese la dirección: ")
         telefono = input("Ingrese el teléfono: ")
-        correo = input("Ingrese el correo electrónico: ")
-        ingresos = float(input("Ingrese los ingresos: "))
-        deudas = float(input("Ingrese las deudas: "))
-        id_notificacion = int(input("Ingrese el ID de notificación (opcional, presione 0 para omitir): "))
-
+        email = input("Ingrese el correo electrónico: ")
+        tipo_cliente = input("Ingrese el tipo de cliente: ")  # Suponiendo que es un campo obligatorio.
+        
         query = """
-        INSERT INTO BancoDelPacifico.Clientes (Nombre, Apellido, Direccion, Telefono, Correo_Electronico, Ingresos, Deudas, id_Notificacion)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO BancoDelPacifico.Clientes (nombre_cliente, cedula_ruc, telefono, email, direccion, tipo_cliente)
+        VALUES (?, ?, ?, ?, ?, ?)
         """
-        cursor.execute(query, (nombre, apellido, direccion, telefono, correo, ingresos, deudas, id_notificacion if id_notificacion != 0 else None))
+        cursor.execute(query, (nombre_cliente, cedula_ruc, telefono, email, direccion, tipo_cliente))
         conexion.commit()
         print("\nCliente insertado exitosamente.")
     except Exception as e:
@@ -46,11 +45,11 @@ def consultar_clientes(conexion):
         rows = cursor.fetchall()
 
         for row in rows:
-            print(f"ID: {row.id_Cliente}, Nombre: {row.Nombre}, Apellido: {row.Apellido}, Dirección: {row.Direccion}, "
-                f"Teléfono: {row.Telefono}, Correo: {row.Correo_Electronico}, Ingresos: {row.Ingresos}, Deudas: {row.Deudas}, "
-                f"ID Notificación: {row.id_Notificacion}")
+            print(f"ID Cliente: {row.id_cliente}, Nombre: {row.nombre_cliente}, Cédula/RUC: {row.cedula_ruc}, Dirección: {row.direccion}, "
+                f"Teléfono: {row.telefono}, Correo: {row.email}, Tipo de Cliente: {row.tipo_cliente}")
     except Exception as e:
         print("\nOcurrió un error al consultar los clientes: ", e)
+
 
 # Función para actualizar un registro en la tabla Clientes
 def actualizar_cliente(conexion):
@@ -58,21 +57,19 @@ def actualizar_cliente(conexion):
         cursor = conexion.cursor()
         print("\n\tActualización de un cliente:")
         id_cliente = int(input("Ingrese el ID del cliente a actualizar: "))
-        nombre = input("Ingrese el nuevo nombre: ")
-        apellido = input("Ingrese el nuevo apellido: ")
+        nombre_cliente = input("Ingrese el nuevo nombre: ")
+        cedula_ruc = input("Ingrese el nuevo número de cédula o RUC: ")
         direccion = input("Ingrese la nueva dirección: ")
         telefono = input("Ingrese el nuevo teléfono: ")
-        correo = input("Ingrese el nuevo correo electrónico: ")
-        ingresos = float(input("Ingrese los nuevos ingresos: "))
-        deudas = float(input("Ingrese las nuevas deudas: "))
-        id_notificacion = int(input("Ingrese el nuevo ID de notificación (opcional, presione 0 para omitir): "))
+        email = input("Ingrese el nuevo correo electrónico: ")
+        tipo_cliente = input("Ingrese el nuevo tipo de cliente: ")
 
         query = """
         UPDATE BancoDelPacifico.Clientes
-        SET Nombre = ?, Apellido = ?, Direccion = ?, Telefono = ?, Correo_Electronico = ?, Ingresos = ?, Deudas = ?, id_Notificacion = ?
-        WHERE id_Cliente = ?
+        SET nombre_cliente = ?, cedula_ruc = ?, direccion = ?, telefono = ?, email = ?, tipo_cliente = ?
+        WHERE id_cliente = ?
         """
-        cursor.execute(query, (nombre, apellido, direccion, telefono, correo, ingresos, deudas, id_notificacion if id_notificacion != 0 else None, id_cliente))
+        cursor.execute(query, (nombre_cliente, cedula_ruc, direccion, telefono, email, tipo_cliente, id_cliente))
         conexion.commit()
         print("\nCliente actualizado exitosamente.")
     except Exception as e:
@@ -84,7 +81,7 @@ def eliminar_cliente(conexion):
         cursor = conexion.cursor()
         print("\n\tEliminación de un cliente:")
         id_cliente = int(input("Ingrese el ID del cliente a eliminar: "))
-        query = "DELETE FROM BancoDelPacifico.Clientes WHERE id_Cliente = ?"
+        query = "DELETE FROM BancoDelPacifico.Clientes WHERE id_cliente = ?"
         cursor.execute(query, (id_cliente,))
         conexion.commit()
 
@@ -94,6 +91,7 @@ def eliminar_cliente(conexion):
             print("\nNo se encontró un cliente con ese ID.")
     except Exception as e:
         print("\nOcurrió un error al eliminar el cliente: ", e)
+
 
 # Función para mostrar el menú CRUD
 def mostrar_opciones_crud():
