@@ -1,0 +1,188 @@
+-- CREACION DE LOGIN DEL SISTEMA
+-- Crear un Login para el servidor
+use master
+CREATE LOGIN Administrador2
+WITH PASSWORD = 'sgc2024a';
+
+-- Cambiar al contexto de la base de datos SGCBP
+USE SGCBP;
+
+-- Crear un Usuario en la base de datos basado en el Login
+CREATE USER Administrador2
+FOR LOGIN Administrador2;
+
+-- Asignar permisos al usuario en la base de datos
+-- Permisos de lectura y escritura
+ALTER ROLE db_datareader ADD MEMBER Administrador2;
+ALTER ROLE db_datawriter ADD MEMBER Administrador2;
+
+-- Asignar permisos totales si es requerido
+ALTER ROLE db_owner ADD MEMBER Administrador2;
+
+CREATE DATABASE SGCBP;
+USE SGCBP;
+
+
+-- Crear esquema principal
+CREATE SCHEMA BancoDelPacifico;
+GO
+
+-- Tabla de Clientes
+CREATE TABLE BancoDelPacifico.Clientes (
+    id_cliente INT PRIMARY KEY IDENTITY(1,1),
+    nombre_cliente VARCHAR(100) NOT NULL,
+    cedula_ruc VARCHAR(20) NOT NULL UNIQUE,
+    telefono VARCHAR(20),
+    email VARCHAR(100),
+    direccion VARCHAR(255),
+    tipo_cliente VARCHAR(50) CHECK (tipo_cliente IN ('Individual', 'Corporativo'))
+);
+
+-- Tabla de Productos Financieros
+CREATE TABLE BancoDelPacifico.ProductosFinancieros (
+    id_producto INT PRIMARY KEY IDENTITY(1,1),
+    id_cliente INT NOT NULL,
+    tipo_producto VARCHAR(50) CHECK (tipo_producto IN ('Crédito', 'Hipoteca', 'Tarjeta de Crédito')),
+    monto_original DECIMAL(10, 2) NOT NULL,
+    saldo_pendiente DECIMAL(10, 2) NOT NULL,
+    tasa_interes DECIMAL(5, 2),
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    CONSTRAINT FK_Producto_Cliente FOREIGN KEY (id_cliente) REFERENCES BancoDelPacifico.Clientes(id_cliente)
+);
+
+-- Tabla de Solicitudes de Crédito
+CREATE TABLE BancoDelPacifico.SolicitudesCredito (
+    id_solicitud INT PRIMARY KEY IDENTITY(1,1),
+    id_cliente INT NOT NULL,
+    monto_solicitado DECIMAL(10, 2) NOT NULL,
+    tasa_interes DECIMAL(5, 2) NOT NULL,
+    plazo_meses INT NOT NULL,
+    estado VARCHAR(50) CHECK (estado IN ('Pendiente', 'Aprobado', 'Rechazado')),
+    fecha_solicitud DATE NOT NULL,
+    CONSTRAINT FK_Solicitud_Cliente FOREIGN KEY (id_cliente) REFERENCES BancoDelPacifico.Clientes(id_cliente)
+);
+
+-- Tabla de Pagos
+CREATE TABLE BancoDelPacifico.Pagos (
+    id_pago INT PRIMARY KEY IDENTITY(1,1),
+    id_producto INT NOT NULL,
+    fecha_pago DATE NOT NULL,
+    monto_pagado DECIMAL(10, 2) NOT NULL,
+    interes_pagado DECIMAL(10, 2),
+    capital_pagado DECIMAL(10, 2),
+    metodo_pago VARCHAR(50),
+    CONSTRAINT FK_Pagos_Producto FOREIGN KEY (id_producto) REFERENCES BancoDelPacifico.ProductosFinancieros(id_producto)
+);
+
+-- Tabla de Cobranzas
+CREATE TABLE BancoDelPacifico.Cobranzas (
+    id_cobranza INT PRIMARY KEY IDENTITY(1,1),
+    id_producto INT NOT NULL,
+    fecha_vencimiento DATE NOT NULL,
+    monto_vencido DECIMAL(10, 2) NOT NULL,
+    estado VARCHAR(50) CHECK (estado IN ('Pendiente', 'Pagado', 'Vencido')),
+    fecha_gestion DATE,
+    nota_gestion VARCHAR(255),
+    CONSTRAINT FK_Cobranza_Producto FOREIGN KEY (id_producto) REFERENCES BancoDelPacifico.ProductosFinancieros(id_producto)
+);
+
+-- Tabla de Intereses y Moras
+CREATE TABLE BancoDelPacifico.InteresesMoras (
+    id_mora INT PRIMARY KEY IDENTITY(1,1),
+    id_producto INT NOT NULL,
+    fecha_aplicacion DATE NOT NULL,
+    monto_interes DECIMAL(10, 2),
+    monto_mora DECIMAL(10, 2),
+    descripcion VARCHAR(255),
+    CONSTRAINT FK_InteresMora_Producto FOREIGN KEY (id_producto) REFERENCES BancoDelPacifico.ProductosFinancieros(id_producto)
+);
+
+-- Tabla de Usuarios
+CREATE TABLE BancoDelPacifico.Usuarios (
+    id_usuario INT PRIMARY KEY IDENTITY(1,1),
+    nombre_usuario VARCHAR(50) NOT NULL,
+    contrasena VARCHAR(255) NOT NULL,
+    rol VARCHAR(50) CHECK (rol IN ('Administrador', 'Oficial de crédito', 'Analista de riesgo', 'Gestor de cobranzas'))
+);
+
+-- Tabla de Notificaciones
+CREATE TABLE BancoDelPacifico.Notificaciones (
+    id_notificacion INT PRIMARY KEY IDENTITY(1,1),
+    id_cliente INT NOT NULL,
+    fecha_notificacion DATE NOT NULL,
+    tipo_notificacion VARCHAR(50) CHECK (tipo_notificacion IN ('SMS', 'Correo', 'Llamada')),
+    estado VARCHAR(50) CHECK (estado IN ('Enviada', 'Pendiente')),
+    CONSTRAINT FK_Notificacion_Cliente FOREIGN KEY (id_cliente) REFERENCES BancoDelPacifico.Clientes(id_cliente)
+);
+-- Insertar datos en Clientes
+INSERT INTO BancoDelPacifico.Clientes (nombre_cliente, cedula_ruc, telefono, email, direccion, tipo_cliente)
+VALUES 
+('Juan Pérez', '0102030405', '0991234567', 'juan.perez@example.com', 'Av. Amazonas 123', 'Individual'),
+('Empresa ABC', '1790010010', '022345678', 'contacto@empresaabc.com', 'Calle Mercurio 456', 'Corporativo'),
+('María Gómez', '1102040506', '0999876543', 'maria.gomez@example.com', 'Calle Sol 789', 'Individual'),
+('Pedro Díaz', '1203050607', '0987654321', 'pedro.diaz@example.com', 'Av. Estrella 101', 'Individual'),
+('Corporación XYZ', '1790010011', '023456789', 'info@corpxyz.com', 'Calle Luna 111', 'Corporativo');
+
+-- Insertar datos en Productos Financieros
+INSERT INTO BancoDelPacifico.ProductosFinancieros (id_cliente, tipo_producto, monto_original, saldo_pendiente, tasa_interes, fecha_inicio, fecha_fin)
+VALUES 
+(1, 'Crédito', 5000, 2500, 12.5, '2024-01-01', '2024-12-31'),
+(2, 'Hipoteca', 200000, 150000, 10.0, '2023-01-01', '2033-12-31'),
+(3, 'Tarjeta de Crédito', 3000, 1200, 18.0, '2024-06-01', '2025-05-31'),
+(4, 'Crédito', 10000, 8000, 11.0, '2024-03-01', '2025-02-28'),
+(5, 'Hipoteca', 250000, 230000, 9.5, '2022-01-01', '2032-12-31');
+
+-- Insertar datos en Solicitudes de Crédito
+INSERT INTO BancoDelPacifico.SolicitudesCredito (id_cliente, monto_solicitado, tasa_interes, plazo_meses, estado, fecha_solicitud)
+VALUES 
+(1, 5000, 12.5, 12, 'Aprobado', '2024-01-01'),
+(2, 100000, 9.0, 120, 'Aprobado', '2023-05-15'),
+(3, 2500, 15.0, 6, 'Pendiente', '2024-08-10'),
+(4, 15000, 11.0, 24, 'Rechazado', '2024-07-01'),
+(5, 300000, 10.0, 180, 'Aprobado', '2023-02-20');
+
+-- Insertar datos en Pagos
+INSERT INTO BancoDelPacifico.Pagos (id_producto, fecha_pago, monto_pagado, interes_pagado, capital_pagado, metodo_pago)
+VALUES 
+(1, '2024-03-01', 500, 60, 440, 'Transferencia'),
+(2, '2024-02-01', 1500, 300, 1200, 'Efectivo'),
+(3, '2024-08-01', 200, 40, 160, 'Tarjeta de crédito'),
+(4, '2024-05-01', 1000, 120, 880, 'Transferencia'),
+(5, '2024-06-01', 2500, 400, 2100, 'Cheque');
+
+-- Insertar datos en Cobranzas
+INSERT INTO BancoDelPacifico.Cobranzas (id_producto, fecha_vencimiento, monto_vencido, estado, fecha_gestion, nota_gestion)
+VALUES 
+(1, '2024-04-01', 500, 'Pendiente', NULL, NULL),
+(2, '2024-01-01', 1500, 'Pagado', '2024-02-02', 'Pago recibido a tiempo'),
+(3, '2024-07-01', 200, 'Pendiente', NULL, 'Contactar al cliente'),
+(4, '2024-06-01', 1000, 'Vencido', '2024-07-01', 'Cliente solicitó extensión'),
+(5, '2023-12-01', 2500, 'Vencido', '2024-01-15', 'Cliente no responde a llamadas');
+
+-- Insertar datos en Intereses y Moras
+INSERT INTO BancoDelPacifico.InteresesMoras (id_producto, fecha_aplicacion, monto_interes, monto_mora, descripcion)
+VALUES 
+(1, '2024-04-01', 50, 20, 'Pago atrasado de marzo'),
+(2, '2024-01-15', 200, 50, 'Retraso en pago hipotecario'),
+(3, '2024-08-01', 20, 5, 'Mora en pago de tarjeta'),
+(4, '2024-07-01', 100, 40, 'Incumplimiento en crédito personal'),
+(5, '2023-12-10', 300, 100, 'Mora acumulada por más de 30 días');
+
+-- Insertar datos en Usuarios
+INSERT INTO BancoDelPacifico.Usuarios (nombre_usuario, contrasena, rol)
+VALUES 
+('admin', 'hashed_password_123', 'Administrador'),
+('credito_oficial1', 'hashed_password_456', 'Oficial de crédito'),
+('riesgo_analista1', 'hashed_password_789', 'Analista de riesgo'),
+('cobrador1', 'hashed_password_abc', 'Gestor de cobranzas'),
+('riesgo_analista2', 'hashed_password_def', 'Analista de riesgo');
+
+-- Insertar datos en Notificaciones
+INSERT INTO BancoDelPacifico.Notificaciones (id_cliente, fecha_notificacion, tipo_notificacion, estado)
+VALUES 
+(1, '2024-03-01', 'Correo', 'Enviada'),
+(2, '2024-02-01', 'SMS', 'Enviada'),
+(3, '2024-08-10', 'Llamada', 'Pendiente'),
+(4, '2024-06-15', 'Correo', 'Pendiente'),
+(5, '2024-07-20', 'Llamada', 'Enviada');
